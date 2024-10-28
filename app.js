@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import cors from "cors";
 import connectDB from "./DB/connectDB.js";
+import Router from "./routes/index.js";
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(cookieParser());
+app.use("api/expenseTracker", Router);
 
 //Routes
 //Swagger Documentation
