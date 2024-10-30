@@ -1,7 +1,7 @@
 import tokenModel from "../models/token.js";
 import BadRequestError from "../Errors/BadRequest.js";
 import { validationResult } from "express-validator";
-import asyncWrapper from "../../middleware/async.js";
+import asyncWrapper from "../middleware/async.js";
 
 const addToken = asyncWrapper(async (req, res, next)=>{
     const errors = validationResult(req);
@@ -21,6 +21,17 @@ const findByUser = asyncWrapper(async (req, res, next) => {
     });
 });
 
+const getAllTokens = asyncWrapper(async (req, res, next) =>{
+    const tokens = await tokenModel.find({})
+    if(tokens){
+        return res.status(200).json({
+            nbHits: tokens.length,
+            tokens
+        })
+    }
+    res.status(404).json({message: 'No tokens found'});
+})
+
 const deleteToken = asyncWrapper(async (req, res,next) =>{
     const deleteToken = await tokenModel.findByIdAndDelete(req.query.id);
     return res.status(200).json({message: 'Token deleted', deleteToken})
@@ -29,6 +40,7 @@ const deleteToken = asyncWrapper(async (req, res,next) =>{
 const tokenControllers = {
     addToken,
     findByUser,
-    deleteToken
+    deleteToken,
+    getAllTokens
 }
 export default tokenControllers;

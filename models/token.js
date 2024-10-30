@@ -8,7 +8,7 @@ const TokenSchema = new mongoose.Schema({
     },
     user: {
         type: Schema.Types.ObjectId,
-        ref: "users",
+        ref: "user",
         required: true
     },
     expirationDate: {

@@ -29,11 +29,21 @@ const resetPasswordValidation = [
 
 ];
 
+const addBudgetValidation = [
+    body('userId').notEmpty().withMessage('User ID is required'),
+    body('category').notEmpty().withMessage('Category is required'),
+    body('amount').isNumeric().withMessage('Amount should be a number'),
+    body('startDate').isISO8601().withMessage('Start date should be a valid date'),
+    body('endDate').isISO8601().withMessage('End date should be a valid date')
+]
+
 const allValidations = {
     signUpValidation,
     signInValidation,
     otpValidation,
     forgotPasswordValidation,
-    resetPasswordValidation
-}
+    resetPasswordValidation,
+    addBudgetValidation,
+ };
+
 export default allValidations;

@@ -22,7 +22,7 @@ app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use("api/expenseTracker", Router);
+app.use("/api/Tracker", Router);
 
 //Routes
 //Swagger Documentation

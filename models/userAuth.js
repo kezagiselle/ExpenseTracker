@@ -16,9 +16,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
-    minlength: 8,
-    select: false
+    required: true
   },
   otp: {
     type: Number,
@@ -34,5 +32,5 @@ const userSchema = new mongoose.Schema({
     default: false
   }
 });
-const userModel = mongoose.model('users', userSchema);
+const userModel = mongoose.model('user', userSchema);
 export default userModel;

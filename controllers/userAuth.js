@@ -17,32 +17,34 @@ const signUp = asyncWrapper(async (req, res, next) =>{
     if(!errors.isEmpty()){
         return next(new BadRequestError(errors.array()[0].msg));
     };
-    const foundUser = await userModel.findOne({email: req.body.email});
+    const foundUser = await userModel.findOne({ email: req.body.email});
     if(foundUser){
         return next(new BadRequestError("Email already in use"));
     };
     const hashedPassword = await bcrypt.hashSync(req.body.password, 10);
 
-    const otp = otpGenerator();
-    const otpExpirationDate = new Date().getTime() + (60 * 1000 * 5)
+    const otp = otpGenerator(); 
+    const otpExpirationDate =new Date().getTime() + (60 * 1000 * 5)
 
     const newUser = await userModel.create({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         email: req.body.email,
         password: hashedPassword,
-        otp,
+        role: req.body.role,
+        otp: otp,
         otpExpires: otpExpirationDate,
     });
     const savedUser = await newUser.save();
-    sendEmail(req.body.email, "verify your account", `Your otp is ${otp}`);
-    if(savedUser){
+    sendEmail(req.body.email, "Verify your account", `Your otp is ${otp}`);
+    if(savedUser) {
         return res.status(201).json({
-            message: 'user account created!',
+            message: "user account created!",
             user: savedUser
         });
     }
 });
+
 
 const validateOtp = asyncWrapper(async (req, res) => {
     //validate
@@ -106,40 +108,55 @@ res.status(200).cookie("token", token, options).json({
 });
 });
 
-const forgotPassword = asyncWrapper(async(req, res) =>{
+const forgotPassword = async(req, res) =>{
     const errors = validationResult(req);
-    if(!errors.isEmpty()){
+    if (!errors.isEmpty()) {
         return next(new BadRequestError(errors.array()[0].msg));
     }
-    //find user
-    const foundUser = await userModel.findOne({email: req.body.email});
-    if(!foundUser){
-        return next(new BadRequestError("User not found"));
+    
+    // Find user
+    const foundUser = await userModel.findOne({ email: req.body.email });
+    if (!foundUser) {
+        return next(new BadRequestError("Your email is not registered"));
     }
-    //generate token 
-    const token = jwt.sign({id: foundUser.id}, process.env.JWT_SECRET, {expiresIn: "24h"});
-
-    //Recording the token to the database
-    await Token.create({
-        token: token,
-        user: foundUser ._id,
-        expirationDate: new Date().getTime() + (60 * 1000 *30)
-    });
-    const link = `http://localhost:2000/reset-password?token=${token}&id=${foundUser.id}`;
-    const emailBody = `click on the link bellow to reset your password\n\n${link}`;
-
-    await sendEmail(req.body.email, "Reset your password", emailBody);
-    res.status(200).json({
-        message: "we sent a reset password link on your email",
-    });
-});
-
-const resetPassword = asyncWrapper(async (req,res,next) =>{
+    
+    // Generate token
+    const token = jwt.sign({ id: foundUser.id }, process.env.JWT_SECRET, { expiresIn: "24h" });
+    
+    // Create token record and send email
+    try {
+        // Save token to the database
+        await Token.create({
+            token: token,
+            user: foundUser._id,
+            expirationDate: new Date().getTime() + (60 * 1000 * 30) // 30 minutes from now
+        });
+    
+        // Send email with reset link
+        const link = `http://localhost:2000/reset-password?token=${token}&id=${foundUser.id}`;
+        const emailBody = `Click on the link below to reset your password:\n\n${link}`;
+        
+        await sendEmail(req.body.email, "Reset your password", emailBody);
+    
+        // Send success response
+        res.status(200).json({
+            message: "We sent a reset password link to your email",
+        });
+    } catch (error) {
+        return next(new Error("Failed to send reset email or save token to the database"));
+    }
+};
+const resetPassword = asyncWrapper(async (req, res, next) =>{
     const { token, id, password } = req.body;
 
     //validate input
     if(!token || !id || !password){
-        return next(new BadRequestError("Invalid or expired token"));
+       return next(new BadRequestError("Token, id and new password are required"));
+    }
+    //verify token
+    const foundToken = await Token.findOne({token});
+    if(!foundToken){
+       return next(new BadRequestError("Invalid or expired token"));
     }
     //update user's password
     foundToken.password = password;
@@ -148,7 +165,7 @@ const resetPassword = asyncWrapper(async (req,res,next) =>{
     //delete the token from the database
     await Token.deleteOne({token});
     res.status(200).json({
-        message: "password reset successfully",
+       message: "password reset successfully",
     })
 });
 
