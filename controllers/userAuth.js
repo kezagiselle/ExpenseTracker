@@ -90,7 +90,7 @@ if(!isPasswordVerified){
 }
 //Generate JWT token
 const token = jwt.sign(
-    { id: foundUser._id, email: foundUser.email },
+    { id: foundUser._id, email: foundUser.email, role: user.role},
     process.env.JWT_SECRET,
     { expiresIn: '24h' }
 );

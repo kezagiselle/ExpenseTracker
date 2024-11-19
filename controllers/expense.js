@@ -51,6 +51,46 @@ const updateExpense = asyncWrapper(async(req, res, next) =>{
     res.status(201).json(updateExpense);
 });
 
+const getByCategoryAndDate = asyncWrapper(async (req, res, next) => {
+    const category = req.params.category;
+    const { week, month, year } = req.query;
+    
+    // Build the date filter
+    let dateFilter = {};
+
+    // Filter by week (use the ISO standard week calculation)
+    if (week && year) {
+        const startOfWeek = new Date(year, 0, (week - 1) * 7 + 1);
+        const endOfWeek = new Date(year, 0, week * 7);
+        dateFilter = { date: { $gte: startOfWeek, $lte: endOfWeek } };
+    }
+    // Filter by month
+    else if (month && year) {
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0); // Last day of the month
+        dateFilter = { date: { $gte: startOfMonth, $lte: endOfMonth } };
+    }
+    // Filter by year
+    else if (year) {
+        const startOfYear = new Date(year, 0, 1);
+        const endOfYear = new Date(year, 11, 31);
+        dateFilter = { date: { $gte: startOfYear, $lte: endOfYear } };
+    }
+
+    // Find expenses by category and date
+    const foundExpenses = await expenseModel.find({
+        category: { $regex: `.*${category}.*`, $options: 'i' },
+        ...dateFilter
+    });
+
+    if (!foundExpenses || foundExpenses.length === 0) {
+        return next(new NotFoundError('No expenses found for this category and date range'));
+    }
+
+    res.status(200).json(foundExpenses);
+});
+
+
 const deleteExpense = asyncWrapper(async(req, res, next) =>{
     const id = req.params.id;
     const deletedExpense = await expenseModel.findByIdAndDelete(id)
@@ -67,6 +107,7 @@ const expenseControllers = {
     getById,
     getByCategory,
     updateExpense,
+    getByCategoryAndDate,
     deleteExpense
 }
 
